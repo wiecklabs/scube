@@ -23,17 +23,17 @@ object Credentials extends ((String, String, Option[String], Option[Date]) => Cr
     case _ => Some(c.accessKeyId, c.secretKey, c.sessionToken, c.expiration)
   }
 
-  lazy val fromConfiguration:Credentials = {
+  private lazy val fromConfiguration:Credentials = {
     import com.typesafe.config.{ConfigFactory => TypesafeConfigFactory, Config => TypesafeConfig}
 
     val config = TypesafeConfigFactory.load
     config.checkValid(TypesafeConfigFactory.defaultReference(), "aws")
 
-    val accessKeyId = config.getString("accessKeyId")
-    val secretKey = config.getString("secretKey")
+    val accessKeyId = config.getString("aws.accessKeyId")
+    val secretKey = config.getString("aws.secretKey")
 
     Credentials(accessKeyId, secretKey)
   }
 
-  implicit def configuredAwsCredentials:Credentials = fromConfiguration
+  implicit def default:Credentials = fromConfiguration
 }

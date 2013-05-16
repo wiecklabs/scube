@@ -13,5 +13,9 @@ class CredentialsSpec extends test.Spec {
         case _ => fail
       }
     }
+
+    "load from configuration" in {
+      Credentials.default must equal(Credentials("bob", "s3kret"))
+    }
   }
 }
