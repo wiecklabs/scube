@@ -1,6 +1,7 @@
 package scube
 
 import dispatch._
+import com.ning.http.client.RequestBuilder
 
 class S3Client(request:Req => Req) {
   def hostName = "s3.amazonaws.com"
