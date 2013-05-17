@@ -1,6 +1,8 @@
 package scube
 
 import java.util.Date
+import scala.collection.mutable.LinkedHashMap
+import scala.collection.SortedMap
 
 object Signer {
 
@@ -31,42 +33,31 @@ object Signer {
     val contentMd5 = content.map(ContentMD5.apply)
     val sessionToken = credentials.sessionToken
 
-    val newHeaders:S3RequestBuilder.Headers = headers +
-      Pair("Date", Seq(date)) +
-      Pair("Host", Seq(host)) ++
+    val sortedHeaders = SortedMap(headers.toSeq ++
       Seq(
+        Some("Date" -> Seq(date)),
+        Some("Host" -> Seq(host)),
         contentType.map("Content-Type" -> Seq(_)),
         contentMd5.map("Content-Md5" -> Seq(_)),
         sessionToken.map("X-Amz-Security-Token" -> Seq(_))
-      ).collect { case Some(pair) => pair }
+      ).collect { case Some(pair) => pair }:_*)
 
-    val sortedHeaders = sortAndFilterHeaders(newHeaders)
+    // Verify resourcePath is correct given the bucket...
 
-    s"""
+    val signature = Signature(credentials.accessKeyId, s"""
       |$method
       |${contentMd5.getOrElse("")}
       |${contentType.getOrElse("")}
       |${date}
-      |${sortedHeaders}$path
-    """.stripMargin.trim
+      |${formatHeaders(sortedHeaders)}$path
+    """.stripMargin.trim)
 
-    headers + ("Authorization" -> Seq(s"AWS ${credentials.accessKeyId}:j11vSh0A3tMeTbcYrfa55J+d2h0="))
+    sortedHeaders.toMap + ("Authorization" -> Seq(s"AWS ${credentials.accessKeyId}:$signature"))
   }
 
-  private def sortAndFilterHeaders(headers:S3RequestBuilder.Headers):S3RequestBuilder.Headers = {
-    val sortedHeaders = headers.keys.filter(_.toLowerCase.startsWith("x-amz")).toSeq.sorted
-    sortedHeaders
-    Map.empty
+  private def formatHeaders(headers:SortedMap[String,Seq[String]]):String = {
+    headers.filter(_._1.toLowerCase.startsWith("x-amz")).map {
+      case (header,values) => s"$header:${values.mkString(",")}"
+    }.mkString("\n")
   }
-
-  // headers: Map[String, util.Collection[String]]
-  // inputStream for contentMd5
-
-//
-//      |$method
-//      |${contentMd5.getOrElse("")}
-//      |${contentType.getOrElse("")}
-//      |$dateTime
-//      |${sortedHeaders.map(k => k.toLowerCase + ":" + headers(k).mkString(",") + "\n").mkString}$resourcePath
-//    """.stripMargin.trim
 }
