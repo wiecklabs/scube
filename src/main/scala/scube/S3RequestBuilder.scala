@@ -37,7 +37,13 @@ object S3RequestBuilder extends Logging {
     new S3RequestBuilder(bucket.credentials, Some(bucket), path)
   }
 
+  def apply(bucket:Bucket) = {
+    logger.trace("apply(bucket={})", bucket)
+    new S3RequestBuilder(bucket.credentials, Some(bucket), "/")
+  }
+
   def apply(credentials:Credentials) = {
+    logger.trace("apply(credentials={})", credentials)
     new S3RequestBuilder(credentials, None, "/")
   }
 }

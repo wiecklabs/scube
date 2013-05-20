@@ -38,6 +38,7 @@ object Signer {
     val date = RFC822(new Date)
     val contentMd5 = content.map(ContentMD5.apply)
     val sessionToken = credentials.sessionToken
+    val resourcePath = bucket.fold(path)(b => s"/$b${path}")
 
     val sortedHeaders = SortedMap(headers.toSeq ++
       Seq(
@@ -48,14 +49,12 @@ object Signer {
         sessionToken.map("X-Amz-Security-Token" -> Seq(_))
       ).collect { case Some(pair) => pair }:_*)
 
-    // Verify resourcePath is correct given the bucket...
-
     val signature = Signature(credentials.secretKey, s"""
       |$method
       |${contentMd5.getOrElse("")}
       |${contentType.getOrElse("")}
       |${date}
-      |${formatHeaders(sortedHeaders)}$path
+      |${formatHeaders(sortedHeaders)}$resourcePath
     """.stripMargin.trim)
 
     sortedHeaders.toMap + ("Authorization" -> Seq(s"AWS ${credentials.accessKeyId}:$signature"))

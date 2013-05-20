@@ -6,8 +6,7 @@ import scala.util.Try
 trait Account {
   def buckets(implicit c:Credentials):Future[Seq[Bucket]]
 
-  def apply(bucketName:String)(implicit c:Credentials):Future[Option[Bucket]] =
-    Future.successful(None)
+  def apply(bucketName:String)(implicit c:Credentials):Future[Option[Bucket]]
 
   def put(bucketName:String)(implicit c:Credentials):Future[Try[Bucket]] = put(bucketName, ACL.PUBLIC_READ)(c)
 

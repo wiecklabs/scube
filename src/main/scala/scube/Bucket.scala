@@ -7,4 +7,5 @@ case class Bucket(name: String,
                   createdAt:Option[Date] = None,
                   delimiter: Option[String] = Some("/"))
                  (implicit val credentials:Credentials) {
+  override def toString = name
 }
