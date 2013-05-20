@@ -1,36 +1,43 @@
 package scube
 
 import dispatch._
-import com.ning.http.client.RequestBuilder
+import com.ning.http.client.{RequestBuilder, Request, RequestBuilderBase, FluentCaseInsensitiveStringsMap}
 import com.typesafe.scalalogging.slf4j.Logging
 
-class S3RequestBuilder extends RequestBuilder {
+class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path:String) extends RequestBuilder with Logging {
 
-  def sign = {
-    request.getMethod
-  }
+  private val _request:Request = request
+
+  setUrl(s"https://${Signer.host(bucket)}$path")
 
   override def build = {
-//    addHeader("Authorization", s"AWS $key:${Signer(secret, method, host, date, path)}")
-    super.build
+    setHeaders(Signer(credentials, bucket, _request.getMethod, path, _request.getHeaders))
+    val finalRequest = super.build
+    logger.trace("build()> {}", finalRequest)
+    finalRequest
+  }
+
+  implicit def headersToJava(headers:S3.Headers):java.util.Map[String, java.util.Collection[String]] = {
+    import scala.collection.JavaConversions.{mapAsJavaMap, seqAsJavaList}
+    mapAsJavaMap(headers.mapValues(seqAsJavaList))
+  }
+
+  implicit def javaToHeaders(map:FluentCaseInsensitiveStringsMap):S3.Headers = {
+    import scala.collection.JavaConversions.{mapAsScalaMap, asScalaBuffer}
+    mapAsScalaMap(map).mapValues(asScalaBuffer).toMap
   }
 }
 
+import com.typesafe.scalalogging.slf4j.Logging
+
 object S3RequestBuilder extends Logging {
 
-  type Headers = Map[String, Seq[String]]
-
-  def apply(bucket:Option[String], path:String) = {
-    val uri = new S3Uri(bucket, path).toString
-    logger.trace("apply(bucket={}, path={}) : uri={}", bucket, path, uri)
-    new S3RequestBuilder().setUrl(uri)
+  def apply(bucket:Bucket, path:String) = {
+    logger.trace("apply(bucket={}, path={})", bucket, path)
+    new S3RequestBuilder(bucket.credentials, Some(bucket), path)
   }
 
-  class S3Uri(bucket:Option[String], path:String) {
-    val host = "s3.amazonaws.com"
-
-    override def toString = {
-      bucket.fold(s"https://$host$path")(bucket => s"https://$bucket.$host$path")
-    }
+  def apply(credentials:Credentials) = {
+    new S3RequestBuilder(credentials, None, "/")
   }
 }
