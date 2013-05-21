@@ -22,7 +22,8 @@ libraryDependencies ++= Seq(
   "joda-time" % "joda-time" % "2.2" % "test",
   "org.joda" % "joda-convert" % "1.2" % "test",
   "com.typesafe" %% "scalalogging-slf4j" % "1.0.1",
-  "ch.qos.logback" % "logback-classic" % "1.0.1",
+  "org.codehaus.janino" % "janino" % "2.6.1",
+  "ch.qos.logback" % "logback-classic" % "1.0.13",
   "org.scalatest" %% "scalatest" % "2.0.M5b" % "test",
   "net.databinder.dispatch" %% "dispatch-core" % "0.10.0",
   "com.typesafe" % "config" % "1.0.0")

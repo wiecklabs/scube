@@ -1,8 +1,15 @@
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator> <!-- defaults to type ch.qos.logback.classic.boolex.JaninoEventEvaluator -->
+                <expression>return logger.startsWith("scube");</expression>
+            </evaluator>
+            <!--<OnMismatch>NEUTRAL</OnMismatch>-->
+            <OnMismatch>DENY</OnMismatch>
+            <OnMatch>NEUTRAL</OnMatch>
+        </filter>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} %logger - %msg%n
-            </pattern>
+            <pattern>%d{HH:mm:ss.SSS} %logger - %msg%n</pattern>
         </encoder>
     </appender>
 

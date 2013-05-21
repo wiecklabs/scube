@@ -64,7 +64,7 @@ object Signer {
 
   private def formatHeaders(headers:SortedMap[String,Seq[String]]):String = {
     headers.filter(_._1.toLowerCase.startsWith("x-amz")).map {
-      case (header,values) => s"$header:${values.mkString(",")}"
-    }.mkString("\n")
+      case (header,values) => s"${header.toLowerCase}:${values.mkString(",")}\n"
+    }.mkString
   }
 }

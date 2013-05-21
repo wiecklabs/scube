@@ -1,8 +1,6 @@
 package scube
 
-import java.util.Date
 import dispatch._, Defaults._
-
 
 class APISpec extends test.Spec {
 
@@ -19,53 +17,59 @@ class APISpec extends test.Spec {
 
     "S3 should" - {
 
+      "return None for a missing bucket" in await {
+        S3(bucketName + "-missing").map(_ must be(None))
+      }
+
+      "fail to delete a missing bucket" in await {
+        S3.delete(Bucket(bucketName + "-missing")) map {
+          case Failure(StatusCode(404)) => ()
+          case Failure(e) => fail(e)
+          case Success(_) => fail
+        }
+      }
+
       "create a bucket with default permissions" in await {
         S3.put(bucketName) flatMap { _ =>
-          S3(bucketName).map {
-            case Some(bucket) => bucket.acl must equal(ACL.PUBLIC_READ)
-            case None => fail
-          }
-        }
-      }
-
-      "delete a bucket" in await {
-        S3(bucketName).map {
-          case Some(bucket) => S3.delete(bucket)
-          case None => fail
-        }
-      }
-
-      "create a bucket with custom permissions" in await {
-        S3.put(bucketName, ACL.AUTHENTICATED_READ) flatMap { _ =>
-          S3(bucketName) map {
-            case Some(Bucket(_, Some(acl), _, _)) => acl must equal(ACL.AUTHENTICATED_READ)
-            case _ => fail
+          Http(S3RequestBuilder(Bucket(bucketName)).copy(path = "/?acl") OK as.xml.Elem).either map {
+            case Left(e) => throw e
+            case Right(xml) => {
+              xml \\ "Grant" filter { grant =>
+                (grant \\ "URI").text.endsWith("AllUsers")
+              } map(_ \\ "Permission" text) must contain("READ")
+            }
           }
         }
       }
 
       "list buckets" in await {
-        S3.buckets zip S3(bucketName) map {
-          case (buckets, Some(bucket)) => buckets must contain(bucket)
-          case _ => fail
+        S3.buckets map { buckets =>
+          buckets.map(_.name) must contain(bucketName)
         }
       }
 
-    }
+      "delete a bucket" in await {
+        S3.delete(Bucket(bucketName)) map {
+          case Failure(e) => fail(e)
+          case _ => ()
+        }
+      }
 
-    "buckets should" - {
-
-      "have meta-data" in {
-        S3(bucketName) map {
-          case Some(Bucket(name, acl, createdAt, delimiter)) => {
-            name must equal(bucketName)
-            acl must equal(ACL.PUBLIC_READ)
+      "create a bucket with custom permissions" in await {
+        S3.put(bucketName, ACL.AUTHENTICATED_READ) flatMap {
+          case Failure(e) => throw e
+          case Success(bucket) => {
+            Http(S3RequestBuilder(Bucket(bucketName)).copy(path = "/?acl") OK as.xml.Elem).either map {
+              case Left(e) => throw e
+              case Right(xml) => {
+                xml \\ "Grant" filter { grant =>
+                  (grant \\ "URI").text.endsWith("AuthenticatedUsers")
+                } map(_ \\ "Permission" text) must contain("READ")
+              }
+            } map(_ => S3.delete(bucket))
           }
-          case None => fail
         }
       }
-
-
     }
 
     "files should" - {

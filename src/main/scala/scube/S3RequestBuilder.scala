@@ -4,7 +4,7 @@ import dispatch._
 import com.ning.http.client.{RequestBuilder, Request, RequestBuilderBase, FluentCaseInsensitiveStringsMap}
 import com.typesafe.scalalogging.slf4j.Logging
 
-class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path:String) extends RequestBuilder with Logging {
+case class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path:String) extends RequestBuilder with Logging {
 
   private val _request:Request = request
 
