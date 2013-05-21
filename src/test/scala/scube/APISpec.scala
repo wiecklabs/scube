@@ -1,6 +1,8 @@
 package scube
 
 import dispatch._, Defaults._
+import java.io.File
+import scala.io.{Codec, Source}
 
 class APISpec extends test.Spec {
 
@@ -81,10 +83,21 @@ class APISpec extends test.Spec {
       "list" in { }
 
       "create" - {
+        val sample = new File(S3.getClass.getResource("/sample.txt").toURI)
 
-        "with inherited bucket permissions" in { }
+        "with inherited bucket permissions" in await {
+          S3(bucketName).map {
+            case Some(bucket) => bucket <<< sample
+            case None => fail
+          }
+        }
 
-        "with custom permissions" in { }
+        "with custom permissions" in await {
+          S3(bucketName).map {
+            case Some(bucket) => bucket <<< sample -> ACL.AUTHENTICATED_READ
+            case None => fail
+          }
+        }
 
       }
 
