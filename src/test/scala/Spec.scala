@@ -1,8 +1,7 @@
 package test
 
-import org.scalatest.FreeSpec
-import org.scalatest.MustMatchers
+import org.scalatest._
 
-trait Spec extends FreeSpec with MustMatchers {
+trait Spec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
 
 }

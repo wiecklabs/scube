@@ -1,3 +1,3 @@
 package scube
 
-class S3File
+case class S3File(path:String)

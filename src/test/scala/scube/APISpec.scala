@@ -6,16 +6,25 @@ import scala.io.{Codec, Source}
 
 class APISpec extends test.Spec {
 
+  import scala.concurrent.{Future, Await}
+  import scala.concurrent.duration.Duration
+  import scala.util.{Try, Success, Failure}
+
+  def await[A](f:Future[A]):A = Await.result(f, Duration.Inf)
+
+  val bucketName = "wieck-test-1"
+
+  override def afterAll = await {
+    def deleteBucket(name:String) = S3(name).flatMap {
+      case None => Future.successful()
+      case Some(bucket) => S3.delete(bucket)
+    }
+
+    deleteBucket(bucketName) zip
+      deleteBucket(bucketName + "-files")
+  }
+
   "The API for" - {
-
-    import scala.concurrent.{Future, Await}
-    import scala.concurrent.duration.Duration
-
-    import scala.util.{Try, Success, Failure}
-
-    def await[A](f:Future[A]):A = Await.result(f, Duration.Inf)
-
-    val bucketName = "wieck-test-1"
 
     "S3 should" - {
 
@@ -76,26 +85,28 @@ class APISpec extends test.Spec {
 
     "files should" - {
 
-      "have meta-data" - {
+      val bucket = await(S3.put(bucketName + "-files")).getOrElse(fail)
 
+      val path = "/sample.txt"
+      val sample = new File(S3.getClass.getResource(path).toURI)
+
+      "return None for a missing File" in await {
+        bucket(path).map(_ must be(None))
       }
 
       "list" in { }
 
       "create" - {
-        val sample = new File(S3.getClass.getResource("/sample.txt").toURI)
 
         "with inherited bucket permissions" in await {
-          S3(bucketName).map {
-            case Some(bucket) => bucket <<< sample
-            case None => fail
+          bucket.put(path)(sample) map { file =>
+            file.path must equal(path)
           }
         }
 
         "with custom permissions" in await {
-          S3(bucketName).map {
-            case Some(bucket) => bucket <<< sample -> ACL.AUTHENTICATED_READ
-            case None => fail
+          bucket.put(path, ACL.AUTHENTICATED_READ)(sample) map { file =>
+            file.path must equal(path)
           }
         }
 
