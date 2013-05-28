@@ -15,7 +15,7 @@ class CredentialsSpec extends test.Spec {
     }
 
     "load from configuration" in {
-      Credentials.default must equal(Credentials("bob", "s3kret"))
+      Credentials.default.getClass must equal(classOf[AwsCredentials])
     }
   }
 }
