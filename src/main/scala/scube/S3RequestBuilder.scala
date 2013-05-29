@@ -1,8 +1,7 @@
 package scube
 
 import dispatch._
-import Defaults._
-import com.ning.http.client.{RequestBuilder, Request, RequestBuilderBase, FluentCaseInsensitiveStringsMap}
+import com.ning.http.client.{RequestBuilder, Request, FluentCaseInsensitiveStringsMap}
 import com.typesafe.scalalogging.slf4j.Logging
 import java.io.{FileInputStream, InputStream, File}
 
@@ -10,20 +9,31 @@ case class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path
 
   private val _request:Request = request
 
+  private var content:Option[InputStream] = None
+  private var contentType:Option[String] = None
+
   setUrl(s"https://${Signer.host(bucket)}$path")
 
-  var file:Option[InputStream] = None
-
   def <<<(file:File):S3RequestBuilder = {
-    setBody(file)
-    this.file = Some(new FileInputStream(file))
-    setMethod("PUT")
+    MimeTypes.forFileName(file.getName).foreach(setContentType(_))
+    upload(file)
+  }
+
+  def setContentType(contentType:String):S3RequestBuilder = {
+    this.contentType = Some(contentType)
+    this.contentType.foreach(setHeader("Content-Type", _))
+    this
+  }
+
+  def upload(file:File):S3RequestBuilder = {
+    content = Some(new FileInputStream(file))
+    setMethod("PUT").setBody(file)
     this
   }
 
   override def build:Request = {
-    setHeaders(Signer(credentials, bucket, _request.getMethod, path, None, file, _request.getHeaders))
-    file.map(_.close)
+    setHeaders(Signer(credentials, bucket, _request.getMethod, path, contentType, content, _request.getHeaders))
+    content.map(_.close)
     val finalRequest = super.build
     logger.trace("build()> {}", finalRequest)
     finalRequest

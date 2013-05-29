@@ -134,7 +134,7 @@ class APISpec extends test.Spec {
         }
       }
 
-      "with custom permissions" in await {
+      "create with custom permissions" in await {
         bucket.put(path, ACL.AUTHENTICATED_READ)(sample) map { file =>
           file.path must equal(path)
         }
