@@ -1,5 +1,5 @@
 package scube
 
-case class S3File(path:String) {
+case class FileItem(path:String) {
   override def toString = path
 }

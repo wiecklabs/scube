@@ -15,25 +15,23 @@ case class Bucket(name: String,
 
   override def toString = name
 
-  def apply(path:String):Future[Option[S3File]] = {
+  def apply(path:String):Future[Option[FileItem]] = {
     Http(S3RequestBuilder(this, path ensureStartsWith '/') OK(response => response)).either map {
       case Left(StatusCode(404)) => None
       case Left(e:Throwable) => throw e
       case Right(response) => {
-        println(s"!!! -> $response")
-        Some(S3File(path))
+        Some(FileItem(path))
       }
     }
   }
 
-  def put(path:String):File => Future[S3File] = put(path, None)
+  def put(path:String):File => Future[FileItem] = put(path, None)
 
-  def put(path:String, acl:ACL.ACL):File => Future[S3File] = put(path, Some(acl))
+  def put(path:String, acl:ACL.ACL):File => Future[FileItem] = put(path, Some(acl))
 
-  def put(path:String, acl:Option[ACL.ACL])(file:File):Future[S3File] = {
+  def put(path:String, acl:Option[ACL.ACL])(file:File):Future[FileItem] = {
     Http(S3RequestBuilder(this, path ensureStartsWith '/').PUT <<< file OK as.String) map { result =>
-      println(result)
-      S3File(path)
+      FileItem(path)
     }
   }
 
@@ -59,13 +57,13 @@ case class Bucket(name: String,
     }
   }
 
-  def list:Future[Seq[S3File]] = {
+  def list:Future[Seq[FileItem]] = {
     Http(S3RequestBuilder(this) OK as.xml.Elem).either map {
-      case Left(StatusCode(404)) => List.empty[S3File]
+      case Left(StatusCode(404)) => List.empty[FileItem]
       case Left(e:Throwable) => throw e
       case Right(bucket) => {
         logger.trace("Bucket contents: {}", bucket)
-        bucket \\ "Contents" \ "Key" map(key => S3File(key.text))
+        bucket \\ "Contents" \ "Key" map(key => FileItem(key.text))
       }
     }
   }
