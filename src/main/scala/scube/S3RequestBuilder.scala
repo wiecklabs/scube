@@ -1,8 +1,10 @@
 package scube
 
 import dispatch._
+import Defaults._
 import com.ning.http.client.{RequestBuilder, Request, RequestBuilderBase, FluentCaseInsensitiveStringsMap}
 import com.typesafe.scalalogging.slf4j.Logging
+import java.io.{FileInputStream, InputStream, File}
 
 case class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path:String) extends RequestBuilder with Logging {
 
@@ -10,8 +12,18 @@ case class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path
 
   setUrl(s"https://${Signer.host(bucket)}$path")
 
-  override def build = {
-    setHeaders(Signer(credentials, bucket, _request.getMethod, path, None, None, _request.getHeaders))
+  var file:Option[InputStream] = None
+
+  def <<<(file:File):S3RequestBuilder = {
+    setBody(file)
+    this.file = Some(new FileInputStream(file))
+    setMethod("PUT")
+    this
+  }
+
+  override def build:Request = {
+    setHeaders(Signer(credentials, bucket, _request.getMethod, path, None, file, _request.getHeaders))
+    file.map(_.close)
     val finalRequest = super.build
     logger.trace("build()> {}", finalRequest)
     finalRequest
