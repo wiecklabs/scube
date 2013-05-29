@@ -117,7 +117,12 @@ class APISpec extends test.Spec {
 
         "meta-data" in { }
 
-        "a file stream" in { }
+        "a file stream" in {
+          bucket(path) map {
+            case None => fail
+            case Some(file) => ContentMD5(file.getBytes) must equal(ContentMD5(sample))
+          }
+        }
 
         "an authenticated url" in { }
       }

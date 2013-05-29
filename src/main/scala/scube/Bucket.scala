@@ -5,6 +5,7 @@ import java.io.File
 import dispatch._, Defaults._
 import scala.util.{Try, Success, Failure}
 import com.typesafe.scalalogging.slf4j.Logging
+import scala.io.Source
 
 case class Bucket(name: String,
                   acl:Option[ACL.ACL] = None,
@@ -20,7 +21,7 @@ case class Bucket(name: String,
       case Left(StatusCode(404)) => None
       case Left(e:Throwable) => throw e
       case Right(response) => {
-        Some(FileItem(path))
+        Some(FileItem(path)(Source.fromInputStream(response.getResponseBodyAsStream)))
       }
     }
   }
@@ -31,7 +32,7 @@ case class Bucket(name: String,
 
   def put(path:String, acl:Option[ACL.ACL])(file:File):Future[FileItem] = {
     Http(S3RequestBuilder(this, path ensureStartsWith '/').PUT <<< file OK as.String) map { result =>
-      FileItem(path)
+      FileItem(path)(Source.fromFile(file))
     }
   }
 
@@ -57,20 +58,20 @@ case class Bucket(name: String,
     }
   }
 
-  def list:Future[Seq[FileItem]] = {
+  def list:Future[Seq[String]] = {
     Http(S3RequestBuilder(this) OK as.xml.Elem).either map {
-      case Left(StatusCode(404)) => List.empty[FileItem]
+      case Left(StatusCode(404)) => List.empty[String]
       case Left(e:Throwable) => throw e
       case Right(bucket) => {
         logger.trace("Bucket contents: {}", bucket)
-        bucket \\ "Contents" \ "Key" map(key => FileItem(key.text))
+        bucket \\ "Contents" \ "Key" map(_.text)
       }
     }
   }
 
   def clear:Future[Seq[Try[Unit]]] = {
-    list flatMap { files =>
-      Future.sequence(files.map { file => delete(file.path) })
+    list flatMap { paths =>
+      Future.sequence(paths.map { delete(_) })
     }
   }
 
