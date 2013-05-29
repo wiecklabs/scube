@@ -5,16 +5,15 @@ import java.io.File
 import scala.io.Source
 
 object ContentMD5 {
-  def apply(bytes:Array[Byte]):String = {
-    val md = MessageDigest getInstance "MD5"
-    md update bytes
-    Base64(md.digest)
+  def apply(bytes:Array[Byte]):String = digest(_ update bytes)
+
+  def apply(file:File):String = digest { md =>
+    using(Source.fromFile(file))(_.foreach(md update _.toByte))
   }
 
-  def apply(file:File):String = {
+  private def digest(f:MessageDigest => Unit):String = {
     val md = MessageDigest getInstance "MD5"
-    val source = Source.fromFile(file)
-    source.withClose(() => source.foreach(md update _.toByte))
+    f(md)
     Base64(md.digest)
   }
 }

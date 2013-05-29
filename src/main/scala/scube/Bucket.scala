@@ -1,11 +1,10 @@
 package scube
 
 import scala.concurrent.Future
-import java.io.File
+import java.io.{FileInputStream, File}
 import dispatch._, Defaults._
 import scala.util.{Try, Success, Failure}
 import com.typesafe.scalalogging.slf4j.Logging
-import scala.io.Source
 
 case class Bucket(name: String,
                   acl:Option[ACL.ACL] = None,
@@ -21,7 +20,7 @@ case class Bucket(name: String,
       case Left(StatusCode(404)) => None
       case Left(e:Throwable) => throw e
       case Right(response) => {
-        Some(FileItem(path)(Source.fromInputStream(response.getResponseBodyAsStream)))
+        Some(FileItem(path)(response.getResponseBodyAsStream))
       }
     }
   }
@@ -32,7 +31,7 @@ case class Bucket(name: String,
 
   def put(path:String, acl:Option[ACL.ACL])(file:File):Future[FileItem] = {
     Http(S3RequestBuilder(this, path ensureStartsWith '/').PUT <<< file OK as.String) map { result =>
-      FileItem(path)(Source.fromFile(file))
+      FileItem(path)(new FileInputStream(file))
     }
   }
 

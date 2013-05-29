@@ -1,11 +1,14 @@
 package scube
 
-import scala.io.BufferedSource
+import scala.io.{Source, BufferedSource}
+import java.io.InputStream
 
-case class FileItem(path:String)(source:BufferedSource) {
+case class FileItem(path:String)(input:InputStream) {
   override def toString = path
 
-  def getBytes = source map(_.toByte) toArray
+  def source = Source.fromInputStream(input)
 
-  def close = source.close
+  def getBytes = {
+    using(source)(_ map(_.toByte) toArray)
+  }
 }
