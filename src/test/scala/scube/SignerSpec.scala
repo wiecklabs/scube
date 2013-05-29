@@ -11,7 +11,7 @@ class SignerSpec extends test.Spec {
       val headers:S3.Headers = Map.empty
 
       "sign the request" in {
-        Signer(credentials, method, path, headers).keys must contain("Authorization")
+        Signer(credentials, None, method, path, None, None, headers).keys must contain("Authorization")
       }
     }
   }

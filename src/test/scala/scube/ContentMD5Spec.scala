@@ -1,7 +1,7 @@
 package scube
 
 import scala.io.Source
-import java.io.File
+import java.io.{FileInputStream, File}
 
 class ContentMD5Spec extends test.Spec {
 
@@ -27,6 +27,11 @@ class ContentMD5Spec extends test.Spec {
     "take a File object" in {
       val expectation = "jvGmmS0Wiu8Io9aXdfjFOQ=="
       ContentMD5(sample) must equal(expectation)
+    }
+
+    "take an InputStream" in {
+      val expectation = "jvGmmS0Wiu8Io9aXdfjFOQ=="
+      ContentMD5(new FileInputStream(sample)) must equal(expectation)
     }
   }
 }

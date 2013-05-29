@@ -11,7 +11,7 @@ case class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path
   setUrl(s"https://${Signer.host(bucket)}$path")
 
   override def build = {
-    setHeaders(Signer(credentials, bucket, _request.getMethod, path, _request.getHeaders))
+    setHeaders(Signer(credentials, bucket, _request.getMethod, path, None, None, _request.getHeaders))
     val finalRequest = super.build
     logger.trace("build()> {}", finalRequest)
     finalRequest

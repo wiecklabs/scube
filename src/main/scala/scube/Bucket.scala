@@ -30,7 +30,7 @@ case class Bucket(name: String,
   def put(path:String, acl:ACL.ACL):File => Future[FileItem] = put(path, Some(acl))
 
   def put(path:String, acl:Option[ACL.ACL])(file:File):Future[FileItem] = {
-    Http(S3RequestBuilder(this, path ensureStartsWith '/').PUT <<< file OK as.String) map { result =>
+    Http(S3RequestBuilder(this, path ensureStartsWith '/') <<< file OK as.String) map { result =>
       FileItem(path)(new FileInputStream(file))
     }
   }

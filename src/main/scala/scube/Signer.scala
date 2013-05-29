@@ -2,37 +2,16 @@ package scube
 
 import java.util.Date
 import scala.collection.SortedMap
+import java.io.InputStream
 
 object Signer {
 
-  def apply(bucket:Bucket,
-            method:String,
-            path:String,
-            headers:S3.Headers):S3.Headers = {
-    sign(bucket.credentials, Some(bucket), method, path, None, None, headers)
-  }
-
   def apply(credentials:Credentials,
-            method:String,
-            path:String,
-            headers:S3.Headers):S3.Headers = {
-    sign(credentials, None, method, path, None, None, headers)
-  }
-
-  def apply(credentials:Credentials,
-            bucket:Option[Bucket],
-            method:String,
-            path:String,
-            headers:S3.Headers):S3.Headers = {
-    sign(credentials, bucket, method, path, None, None, headers)
-  }
-
-  def sign(credentials:Credentials,
             bucket:Option[Bucket],
             method:String,
             path:String,
             contentType:Option[String],
-            content:Option[Array[Byte]],
+            content:Option[InputStream],
             headers:S3.Headers):S3.Headers = {
 
     val date = RFC822(new Date)
