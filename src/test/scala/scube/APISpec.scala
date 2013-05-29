@@ -17,7 +17,7 @@ class APISpec extends test.Spec {
   override def afterAll = await {
     def deleteBucket(name:String) = S3(name).flatMap {
       case None => Future.successful()
-      case Some(bucket) => S3.delete(bucket)
+      case Some(bucket) => bucket.clear map { _ => S3.delete(bucket) }
     }
 
     deleteBucket(bucketName) zip
@@ -59,6 +59,15 @@ class APISpec extends test.Spec {
         }
       }
 
+      "clear a bucket" in await {
+        S3(bucketName) flatMap {
+          case None => fail
+          case Some(bucket) => bucket.clear flatMap {
+            case _ => bucket.list.map(_ must be('empty))
+          }
+        }
+      }
+
       "delete a bucket" in await {
         S3.delete(Bucket(bucketName)) map {
           case Failure(e) => fail(e)
@@ -87,29 +96,21 @@ class APISpec extends test.Spec {
 
       val bucket = await(S3.put(bucketName + "-files")).getOrElse(fail)
 
-      val path = "/sample.txt"
-      val sample = new File(S3.getClass.getResource(path).toURI)
+      val path = "sample.txt"
+      val sample = new File(S3.getClass.getResource("/" + path).toURI)
 
       "return None for a missing File" in await {
-        bucket(path).map(_ must be(None))
+        bucket("missing-" + path).map(_ must be(None))
       }
 
-      "list" in { }
-
-      "create" - {
-
-        "with inherited bucket permissions" in await {
-          bucket.put(path)(sample) map { file =>
-            file.path must equal(path)
-          }
+      "create with inherited bucket permissions" in await {
+        bucket.put(path)(sample) map { file =>
+          file.path must equal(path)
         }
+      }
 
-        "with custom permissions" in await {
-          bucket.put(path, ACL.AUTHENTICATED_READ)(sample) map { file =>
-            file.path must equal(path)
-          }
-        }
-
+      "list" in await {
+        bucket.list.map(_.map(_.toString) must contain(path))
       }
 
       "get" - {
@@ -121,9 +122,18 @@ class APISpec extends test.Spec {
         "an authenticated url" in { }
       }
 
-      "delete" in { }
+      "delete" in await {
+        bucket.delete(path) map {
+          case Failure(e) => fail(e)
+          case _ => ()
+        }
+      }
 
-      "bulk delete" in { }
+      "with custom permissions" in await {
+        bucket.put(path, ACL.AUTHENTICATED_READ)(sample) map { file =>
+          file.path must equal(path)
+        }
+      }
 
       "copy" in { }
     }
