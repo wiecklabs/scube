@@ -102,16 +102,12 @@ class APISpec extends test.Spec {
         val source = "1-" + samplePath
         val destination = "2-" + samplePath
 
-        "from another bucket" in await {
-          val bucket1 = await(S3.put("wieck-test-copy-1")).getOrElse(fail)
-          val bucket2 = await(S3.put("wieck-test-copy-2")).getOrElse(fail)
-
-
-          bucket1.put(source)(sample) flatMap { file =>
-            bucket2.copyFile(bucket1, source, destination) map {
+        def testCopyFile(sourceBucket:Bucket, destinationBucket:Bucket)(op: => Future[Try[Unit]]) = {
+          sourceBucket.put(source)(sample) flatMap { file =>
+            op map {
               case Failure(e) => fail(e)
               case _ => await {
-                bucket2(destination) map {
+                destinationBucket(destination) map {
                   case None => fail("Could not find copied file in destination!")
                   case Some(copyOfFile) => copyOfFile.size must equal(file.size)
                 }
@@ -120,20 +116,17 @@ class APISpec extends test.Spec {
           }
         }
 
+        "from another bucket" in await {
+          val bucket1 = await(S3.put("wieck-test-copy-1")).getOrElse(fail)
+          val bucket2 = await(S3.put("wieck-test-copy-2")).getOrElse(fail)
+
+          testCopyFile(bucket1, bucket2)(bucket2.copyFile(bucket1, source, destination))
+        }
+
         "within the same bucket" in await {
           val bucket = await(S3.put("wieck-test-copy")).getOrElse(fail)
 
-          bucket.put(source)(sample) flatMap { file =>
-            bucket.copyFile(source, destination) map {
-              case Failure(e) => fail(e)
-              case _ => await {
-                bucket(destination) map {
-                  case None => fail("Could not find copied file in destination!")
-                  case Some(copyOfFile) => copyOfFile.size must equal(file.size)
-                }
-              }
-            }
-          }
+          testCopyFile(bucket, bucket)(bucket.copyFile(source, destination))
         }
       }
     }
