@@ -6,4 +6,9 @@ package object scube {
     source.close
     result
   }
+
+  implicit class WrappedString(s:String) {
+    def ensureStartsWith(c:Char):String = ensureStartsWith(c.toString)
+    def ensureStartsWith(prefix:String):String = if(s.startsWith(prefix)) s else prefix + s
+  }
 }

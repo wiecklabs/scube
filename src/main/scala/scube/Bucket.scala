@@ -74,8 +74,29 @@ case class Bucket(name: String,
     }
   }
 
-  private implicit class WrappedString(s:String) {
-    def ensureStartsWith(c:Char):String = ensureStartsWith(c.toString)
-    def ensureStartsWith(prefix:String):String = if(s.startsWith(prefix)) s else prefix + s
+  def copyFile(sourcePath:String, destinationPath:String):Future[Try[Unit]] =
+    copyFile(this, sourcePath, destinationPath)
+
+  def copyFile(sourceBucket:Bucket, sourcePath:String, destinationPath:String):Future[Try[Unit]] = {
+
+    val source = (sourceBucket.name ensureStartsWith '/') + (sourcePath ensureStartsWith '/')
+    val destination = destinationPath ensureStartsWith '/'
+
+    Http(S3RequestBuilder(this, destination)
+      .setHeader("x-amz-copy-source", source)
+      .PUT OK(response => response)).either map {
+      case Left(e) => {
+        logger.error("Unhandled error status", e)
+        throw e
+      }
+      case Right(response) if response.getStatusCode == 200 => {
+        logger.info("Copied '{}' to '{}' in bucket {}", source, destination, name)
+        Success()
+      }
+      case Right(response) => {
+        logger.error("UnhandledResponse OK status: {}", response)
+        Failure(new UnhandledResponse(response))
+      }
+    }
   }
 }

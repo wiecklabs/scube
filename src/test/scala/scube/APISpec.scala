@@ -14,6 +14,9 @@ class APISpec extends test.Spec {
 
   val bucketName = "wieck-test-1"
 
+  val samplePath = "sample.txt"
+  val sample = new File(S3.getClass.getResource("/" + samplePath).toURI)
+
   override def afterAll = await {
     def deleteBucket(name:String) = S3(name).flatMap {
       case None => Future.successful()
@@ -21,7 +24,10 @@ class APISpec extends test.Spec {
     }
 
     deleteBucket(bucketName) zip
-      deleteBucket(bucketName + "-files")
+      deleteBucket(bucketName + "-files") zip
+      deleteBucket("wieck-test-copy") zip
+      deleteBucket("wieck-test-copy-1") zip
+      deleteBucket("wieck-test-copy-2")
   }
 
   "The API for" - {
@@ -90,27 +96,64 @@ class APISpec extends test.Spec {
           }
         }
       }
+
+      "copy" - {
+
+        val source = "1-" + samplePath
+        val destination = "2-" + samplePath
+
+        "from another bucket" in await {
+          val bucket1 = await(S3.put("wieck-test-copy-1")).getOrElse(fail)
+          val bucket2 = await(S3.put("wieck-test-copy-2")).getOrElse(fail)
+
+
+          bucket1.put(source)(sample) flatMap { file =>
+            bucket2.copyFile(bucket1, source, destination) map {
+              case Failure(e) => fail(e)
+              case _ => await {
+                bucket2(destination) map {
+                  case None => fail("Could not find copied file in destination!")
+                  case Some(copyOfFile) => copyOfFile.size must equal(file.size)
+                }
+              }
+            }
+          }
+        }
+
+        "within the same bucket" in await {
+          val bucket = await(S3.put("wieck-test-copy")).getOrElse(fail)
+
+          bucket.put(source)(sample) flatMap { file =>
+            bucket.copyFile(source, destination) map {
+              case Failure(e) => fail(e)
+              case _ => await {
+                bucket(destination) map {
+                  case None => fail("Could not find copied file in destination!")
+                  case Some(copyOfFile) => copyOfFile.size must equal(file.size)
+                }
+              }
+            }
+          }
+        }
+      }
     }
 
     "files should" - {
 
       val bucket = await(S3.put(bucketName + "-files")).getOrElse(fail)
 
-      val path = "sample.txt"
-      val sample = new File(S3.getClass.getResource("/" + path).toURI)
-
       "return None for a missing File" in await {
-        bucket("missing-" + path).map(_ must be(None))
+        bucket("missing-" + samplePath).map(_ must be(None))
       }
 
       "create with inherited bucket permissions" in await {
-        bucket.put(path)(sample) map { file =>
-          file.path must equal(path)
+        bucket.put(samplePath)(sample) map { file =>
+          file.path must equal(samplePath)
         }
       }
 
       "list" in await {
-        bucket.list.map(_.map(_.toString) must contain(path))
+        bucket.list.map(_.map(_.toString) must contain(samplePath))
       }
 
       "get" - {
@@ -118,7 +161,7 @@ class APISpec extends test.Spec {
         "meta-data" in { }
 
         "a file stream" in {
-          bucket(path) map {
+          bucket(samplePath) map {
             case None => fail
             case Some(file) => ContentMD5(file.getBytes) must equal(ContentMD5(sample))
           }
@@ -128,19 +171,17 @@ class APISpec extends test.Spec {
       }
 
       "delete" in await {
-        bucket.delete(path) map {
+        bucket.delete(samplePath) map {
           case Failure(e) => fail(e)
           case _ => ()
         }
       }
 
       "create with custom permissions" in await {
-        bucket.put(path, ACL.AUTHENTICATED_READ)(sample) map { file =>
-          file.path must equal(path)
+        bucket.put(samplePath, ACL.AUTHENTICATED_READ)(sample) map { file =>
+          file.path must equal(samplePath)
         }
       }
-
-      "copy" in { }
     }
 
   }

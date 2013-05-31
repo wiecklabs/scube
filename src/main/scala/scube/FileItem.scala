@@ -1,6 +1,6 @@
 package scube
 
-import scala.io.{Source, BufferedSource}
+import scala.io.Source
 import java.io.InputStream
 
 case class FileItem(path:String)(input:InputStream) {
@@ -8,7 +8,7 @@ case class FileItem(path:String)(input:InputStream) {
 
   def source = Source.fromInputStream(input)
 
-  def getBytes = {
-    using(source)(_ map(_.toByte) toArray)
-  }
+  def getBytes = using(source)(_ map(_.toByte) toArray)
+
+  def size = using(source)(_.size)
 }
