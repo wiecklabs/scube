@@ -1,5 +1,7 @@
 package scube
 
+import scala.util.Try
+
 object RFC822 {
   import java.util.Date
   import java.util.{Locale, SimpleTimeZone}
@@ -12,4 +14,6 @@ object RFC822 {
   }
 
   def apply(date:Date) = rfc822DateFormat format date
+
+  def unapply(date:String):Option[Date] = Try(rfc822DateFormat.parse(date)).toOption
 }

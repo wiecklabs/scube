@@ -5,6 +5,8 @@ import java.io.{FileInputStream, File}
 import dispatch._, Defaults._
 import scala.util.{Try, Success, Failure}
 import com.typesafe.scalalogging.slf4j.Logging
+import scala.xml._
+import scube.S3.DeserializationException
 
 case class Bucket(name: String,
                   acl:Option[ACL.ACL] = None,
@@ -29,11 +31,29 @@ case class Bucket(name: String,
 
   def put(path:String, acl:ACL.ACL):File => Future[FileItem] = put(path, Some(acl))
 
-  def put(path:String, acl:Option[ACL.ACL])(file:File):Future[FileItem] = {
-    Http(S3RequestBuilder(this, path ensureStartsWith '/') <<< file OK as.String) map { result =>
-      FileItem(path)(new FileInputStream(file))
+  def put(path:String, acl:Option[ACL.ACL])(file:File):Future[FileItem] = Http {
+      S3RequestBuilder(this, path ensureStartsWith '/') <<< file OK { _ =>
+        FileItem(path)(new FileInputStream(file))
+      }
+    }
+
+  def lifecycle:Future[Lifecycle] = {
+    val emptyLifecycle = Lifecycle.empty(this)
+    Http(S3RequestBuilder(this, "/?lifecycle") OK as.xml.Elem).either map {
+      case Left(StatusCode(404)) => emptyLifecycle
+      case Left(e) => throw e
+      case Right(emptyLifecycle(populatedLifecycle)) => populatedLifecycle
+      case Right(xml) => throw new DeserializationException(xml)
     }
   }
+
+  def put(lifecycle:Lifecycle):Future[Lifecycle] = {
+    val xml = lifecycle.toXml
+    logger.debug("put(lifecycle={})", xml)
+    Http(S3RequestBuilder(this, "/?lifecycle").PUT(xml.toString) OK(_ => lifecycle))
+  }
+
+  def put(rules:Rule*):Future[Lifecycle] = put(Lifecycle(this, rules))
 
   def delete(path:String):Future[Try[Unit]] = {
     logger.debug("delete(path={}", path)

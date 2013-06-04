@@ -6,12 +6,15 @@ import dispatch._, Defaults._
 import com.typesafe.scalalogging.slf4j.Logging
 import com.ning.http.client.Response
 import scala.xml.Elem
+import scala.xml.NodeSeq
 
 object S3 extends Account with Logging {
 
   type Headers = Map[String, Seq[String]]
 
   class UnhandledResponse(response:Response) extends RuntimeException(response.getStatusText)
+
+  class DeserializationException(xml:NodeSeq) extends RuntimeException("Could not parse " + xml)
 
   def apply(bucketName: String)(implicit c: Credentials): Future[Option[Bucket]] = {
     val bucket = Bucket(bucketName)

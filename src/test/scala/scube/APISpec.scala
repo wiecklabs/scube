@@ -2,15 +2,11 @@ package scube
 
 import dispatch._, Defaults._
 import java.io.File
-import scala.io.{Codec, Source}
 
 class APISpec extends test.Spec {
 
-  import scala.concurrent.{Future, Await}
-  import scala.concurrent.duration.Duration
+  import scala.concurrent.Future
   import scala.util.{Try, Success, Failure}
-
-  def await[A](f:Future[A]):A = Await.result(f, Duration.Inf)
 
   val bucketName = "wieck-test-1"
 
@@ -18,11 +14,6 @@ class APISpec extends test.Spec {
   val sample = new File(S3.getClass.getResource("/" + samplePath).toURI)
 
   override def afterAll = await {
-    def deleteBucket(name:String) = S3(name).flatMap {
-      case None => Future.successful()
-      case Some(bucket) => bucket.clear map { _ => S3.delete(bucket) }
-    }
-
     deleteBucket(bucketName) zip
       deleteBucket(bucketName + "-files") zip
       deleteBucket("wieck-test-copy") zip
@@ -96,8 +87,10 @@ class APISpec extends test.Spec {
           }
         }
       }
+    }
 
-      "copy" - {
+    "buckets should" - {
+      "copy files" - {
 
         val source = "1-" + samplePath
         val destination = "2-" + samplePath

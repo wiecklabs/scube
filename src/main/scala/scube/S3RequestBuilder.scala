@@ -3,7 +3,7 @@ package scube
 import dispatch._
 import com.ning.http.client.{RequestBuilder, Request, FluentCaseInsensitiveStringsMap}
 import com.typesafe.scalalogging.slf4j.Logging
-import java.io.{FileInputStream, InputStream, File}
+import java.io.{ByteArrayInputStream, FileInputStream, InputStream, File}
 
 case class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path:String) extends RequestBuilder with Logging {
 
@@ -28,6 +28,12 @@ case class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path
   def upload(file:File):S3RequestBuilder = {
     content = Some(new FileInputStream(file))
     setMethod("PUT").setBody(file)
+    this
+  }
+
+  def PUT(body:String):S3RequestBuilder = {
+    content = Some(new ByteArrayInputStream(body.getBytes(DEFAULT_ENCODING)))
+    setMethod("PUT").setBody(body)
     this
   }
 
