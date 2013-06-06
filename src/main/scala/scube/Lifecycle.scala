@@ -34,10 +34,9 @@ case class Lifecycle(bucket:Bucket, rules:Seq[Rule]) extends Logging {
   }
 
   def unapply(xml:Node):Option[Lifecycle] = Utility.trim(xml) match {
-    case <LifecycleConfiguration>{Rules(rules @ _*)}</LifecycleConfiguration> => Some(Lifecycle(bucket, rules))
-    case <LifecycleConfiguration>{things @ _*}</LifecycleConfiguration> => {
-      println("NO LIFECYCLE MATCH: " + things.map(_.getClass))
-      None
+    case <LifecycleConfiguration>{rules @ _*}</LifecycleConfiguration> => rules match {
+      case Rules(rules) => Some(Lifecycle(bucket, rules))
+      case _ => None
     }
     case _ => None
   }

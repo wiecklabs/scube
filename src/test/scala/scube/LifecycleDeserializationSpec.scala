@@ -66,6 +66,12 @@ class LifecycleDeserializationSpec extends test.Spec {
       Rule.unapply(xml) must equal(None)
     }
 
+    "not match with just a Text node" in {
+      val xml = <Rule>BOB!</Rule>
+
+      Rule.unapply(xml) must equal(None)
+    }
+
     "match with an Expiration" in {
       val xml = <Rule>
         <ID>tmp</ID>
@@ -163,19 +169,19 @@ class LifecycleDeserializationSpec extends test.Spec {
     "fail to deserialize" in {
       val rules = xml \\ "Rule" ++ <Rule>BOB!</Rule>
 
-      Rules.unapplySeq(rules) must equal(None)
+      Rules.unapply(rules) must equal(None)
     }
 
     "deserialize with one rule" in {
       val rules = xml \\ "Rule" head
 
-      Rules.unapplySeq(rules) must equal(Some(Seq(sampleRules.head)))
+      Rules.unapply(rules) must equal(Some(Seq(sampleRules.head)))
     }
 
     "deserialize multiple rules" in {
       val rules = xml \\ "Rule"
 
-      Rules.unapplySeq(rules) must equal(Some(sampleRules))
+      Rules.unapply(rules) must equal(Some(sampleRules))
     }
   }
 
@@ -217,7 +223,6 @@ class LifecycleDeserializationSpec extends test.Spec {
     }
 
     "deserialize with multiple rules" in {
-      println("BEGIN MULTI")
       val xml = <LifecycleConfiguration>
         <Rule>
           <ID>archive</ID>
@@ -241,7 +246,6 @@ class LifecycleDeserializationSpec extends test.Spec {
       val expectation = Some(lifecycle ++ sampleRules)
 
       lifecycle.unapply(xml) must equal(expectation)
-      println("END MULTI")
     }
   }
 }

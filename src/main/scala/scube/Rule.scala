@@ -48,26 +48,14 @@ object Rule {
 }
 
 object Rules {
-  def unapplySeq(nodes:Seq[NodeSeq]):Option[Seq[Rule]] = {
-    println("RULES: " + nodes)
+  def unapply(nodes:Seq[Node]):Option[Seq[Rule]] = {
 
-    val rules:Seq[Option[Rule]] = nodes map {
-      case Elem(prefix, "Rule", attribs, scope, Rule(rule)) => {
-        println("FOUND RULE: " + rule.id)
-        Some(rule)
-      }
-      case rule => {
-        println("NO RULE: " + rule)
-        None
-      }
-    }
+    val rules:Seq[Rule] = nodes collect { case Rule(rule) => rule }
 
-    if (rules.exists(_.isEmpty)) {
-      println("FAIL: " + rules)
+    if (rules.isEmpty || rules.length != nodes.length) {
       None
     } else {
-      println("SUCCESS: " + rules)
-      Some(rules collect { case Some(rule) => rule })
+      Some(rules)
     }
   }
 }
