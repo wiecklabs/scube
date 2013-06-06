@@ -19,6 +19,9 @@ object Transition {
 }
 
 case class DaysTransition(days:Int) extends Transition {
+
+  require(days > 0, "Days must be greater than Zero")
+
   def toXml =
     <Transition>
       <Days>{days}</Days>

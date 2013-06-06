@@ -34,6 +34,10 @@ class RuleSpec extends test.Spec {
         expirationRule.expiration must equal(DaysExpiration(1))
       }
 
+      "require non-zero number of days" in intercept[IllegalArgumentException] {
+        rule.expires(0)
+      }
+
       "by date" in {
         val expirationDate = new DateTime(2013, 5, 16, 11, 2, 30).toDate
         val expirationRule = rule.expires(expirationDate)
@@ -52,6 +56,10 @@ class RuleSpec extends test.Spec {
         val transitionRule = rule.transitions(1)
 
         transitionRule.transition must equal(DaysTransition(1))
+      }
+
+      "require non-zero number of days" in intercept[IllegalArgumentException] {
+        rule.transitions(0)
       }
 
       "by date" in {

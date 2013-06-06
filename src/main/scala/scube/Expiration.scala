@@ -23,6 +23,9 @@ object Expiration {
 }
 
 case class DaysExpiration(days:Int) extends Expiration {
+
+  require(days > 0, "Days must be greater than Zero")
+
   def toXml =
     <Expiration>
       <Days>{days}</Days>
