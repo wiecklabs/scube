@@ -83,16 +83,13 @@ for {
 #### Files
 
 ```scala
-val file:Future[FileItem] = for {
-  Some(bucket) <- S3("cats")
-  file <- bucket.put("feline.jpg")(new File("feline.jpg"))
-} yield {
-  bucket.copyFile(file.path, "roger.jpg") flatMap { _ =>
-    bucket.delete(file.path) map { _ =>
-      bucket.list // Should return only "roger.jpg" now.
-    }
-  }
-}
+val file:Future[Seq[String]] = for {
+  Some(bucket)  <- S3("cats")
+  file          <- bucket.put("feline.jpg")(new File("feline.jpg"))
+  _             <- bucket.copyFile(file.path, "roger.jpg")
+  _             <- bucket.delete(file.path)
+  files         <- bucket.list
+} yield files
 ```
 
 Sample Use Case: An Expiration Rule such as the /"tmp"/ Rule we defined previously, in conjunction with
