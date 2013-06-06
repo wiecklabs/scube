@@ -2,6 +2,7 @@ package scube
 
 /**
  * MIME type utilities.
+ * Lifted from Play Framework.
  */
 object MimeTypes {
 
