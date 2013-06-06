@@ -83,7 +83,7 @@ for {
 #### Files
 
 ```scala
-val file:Future[Seq[String]] = for {
+val files:Future[Seq[String]] = for {
   Some(bucket)  <- S3("cats")
   file          <- bucket.put("feline.jpg")(new File("feline.jpg"))
   _             <- bucket.copyFile(file.path, "roger.jpg")
