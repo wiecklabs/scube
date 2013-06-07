@@ -3,6 +3,7 @@ package scube
 import java.util.Date
 import scala.collection.SortedMap
 import java.io.InputStream
+import scala.io.Codec
 
 object Signer {
 
@@ -12,7 +13,7 @@ object Signer {
             path:String,
             contentType:Option[String],
             content:Option[InputStream],
-            headers:S3.Headers):S3.Headers = {
+            headers:S3.Headers)(implicit codec:Codec):S3.Headers = {
 
     val date = RFC822(new Date)
     val contentMd5 = content.map(ContentMD5.apply)

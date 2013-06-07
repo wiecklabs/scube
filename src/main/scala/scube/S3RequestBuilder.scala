@@ -4,6 +4,7 @@ import dispatch._
 import com.ning.http.client.{RequestBuilder, Request, FluentCaseInsensitiveStringsMap}
 import com.typesafe.scalalogging.slf4j.Logging
 import java.io.{ByteArrayInputStream, FileInputStream, InputStream, File}
+import scala.io.Codec
 
 case class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path:String) extends RequestBuilder with Logging {
 
@@ -11,12 +12,13 @@ case class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path
 
   private var content:Option[InputStream] = None
   private var contentType:Option[String] = None
+  implicit private var contentCodec:Codec = Codec.UTF8
 
   setUrl(s"https://${Signer.host(bucket)}$path")
 
-  def <<<(file:File):S3RequestBuilder = {
+  def <<<(file:File)(implicit codec:Codec):S3RequestBuilder = {
     MimeTypes.forFileName(file.getName).foreach(setContentType(_))
-    upload(file)
+    upload(file)(codec)
   }
 
   def setContentType(contentType:String):S3RequestBuilder = {
@@ -25,8 +27,9 @@ case class S3RequestBuilder(credentials:Credentials, bucket:Option[Bucket], path
     this
   }
 
-  def upload(file:File):S3RequestBuilder = {
+  def upload(file:File)(codec:Codec):S3RequestBuilder = {
     content = Some(new FileInputStream(file))
+    contentCodec = codec
     setMethod("PUT").setBody(file)
     this
   }
