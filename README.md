@@ -17,7 +17,7 @@ You can see examples of the features in the `APISpec`.
 
 ## API
 
-The Scube API wrapped up in Futures. If you have experience with other Future based libraries, you should feel at home.
+The Scube API is wrapped up in Futures. If you have experience with other Future based libraries, you should feel at home.
 
 ### Conventions
 
