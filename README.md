@@ -92,13 +92,13 @@ val files:Future[Seq[String]] = for {
 } yield files
 ```
 
-Sample Use Case: An Expiration Rule such as the /"tmp"/ Rule we defined previously, in conjunction with
+Sample Use Case: An Expiration Rule such as the `"tmp"` Rule we defined previously, in conjunction with
 `copyFile` could come in handy for AJAX uploads in a Web Application.
 
 First, the User drops a file onto an AJAX upload region. Our Application PUTs that up to S3 under
 a `tmp/` path: `bucket.put("tmp/" + file.getName)(file)`
 
-Then when the User submits the Web Form for the Photo's Title, Caption, etc, we /copy/ it to a permanent
+Then when the User submits the Web Form for the Photo's Title, Caption, etc, we _copy_ it to a permanent
 location: `bucket.copyFile("tmp/" + file.getName, file.getName)`
 
 We don't have to worry about the original upload location since our Expiration Rule will cause it to be
