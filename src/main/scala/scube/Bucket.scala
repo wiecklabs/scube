@@ -7,7 +7,6 @@ import scala.util.{Try, Success, Failure}
 import com.typesafe.scalalogging.slf4j.Logging
 import scala.xml._
 import scube.S3.DeserializationException
-import scala.io.Codec
 
 case class Bucket(name: String,
                   acl:Option[ACL.ACL] = None,
@@ -28,11 +27,11 @@ case class Bucket(name: String,
     }
   }
 
-  def put(path:String)(file:File)(implicit codec:Codec):Future[FileItem] = put(path, None)(file)(codec)
+  def put(path:String):File => Future[FileItem] = put(path, None)
 
-  def put(path:String, acl:ACL.ACL)(file:File)(implicit codec:Codec):Future[FileItem] = put(path, Some(acl))(file)(codec)
+  def put(path:String, acl:ACL.ACL):File => Future[FileItem] = put(path, Some(acl))
 
-  def put(path:String, acl:Option[ACL.ACL])(file:File)(implicit codec:Codec):Future[FileItem] = Http {
+  def put(path:String, acl:Option[ACL.ACL])(file:File):Future[FileItem] = Http {
       S3RequestBuilder(this, path ensureStartsWith '/') <<< file OK { _ =>
         FileItem(path)(new FileInputStream(file))
       }
