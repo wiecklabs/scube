@@ -27,6 +27,10 @@ case class Bucket(name: String,
     }
   }
 
+  def url(file:FileItem):String = {
+    Signer.host(Some(this)) + file.path.ensureStartsWith('/')
+  }
+
   def put(path:String):File => Future[FileItem] = put(path, None)
 
   def put(path:String, acl:ACL.ACL):File => Future[FileItem] = put(path, Some(acl))
