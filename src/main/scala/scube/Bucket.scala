@@ -7,6 +7,7 @@ import scala.util.{Try, Success, Failure}
 import com.typesafe.scalalogging.slf4j.Logging
 import scala.xml._
 import scube.S3.DeserializationException
+import java.net.URI
 
 case class Bucket(name: String,
                   acl:Option[ACL.ACL] = None,
@@ -29,6 +30,10 @@ case class Bucket(name: String,
 
   def url(file:FileItem):String = {
     Signer.host(Some(this)) + file.path.ensureStartsWith('/')
+  }
+
+  def uri(file: FileItem): String = {
+    new URI("s3://" + url(file))
   }
 
   def put(path:String):File => Future[FileItem] = put(path, None)
