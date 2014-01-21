@@ -32,7 +32,7 @@ case class Bucket(name: String,
     Signer.host(Some(this)) + file.path.ensureStartsWith('/')
   }
 
-  def uri(file: FileItem): String = {
+  def uri(file: FileItem): URI = {
     new URI("s3://" + url(file))
   }
 
