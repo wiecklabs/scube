@@ -41,7 +41,8 @@ case class Bucket(name: String,
   def put(path:String, acl:ACL.ACL):File => Future[FileItem] = put(path, Some(acl))
 
   def put(path:String, acl:Option[ACL.ACL])(file:File):Future[FileItem] = Http {
-      S3RequestBuilder(this, path ensureStartsWith '/') <<< file OK { _ =>
+    S3RequestBuilder(this, path ensureStartsWith '/')
+      .setHeader("x-amz-acl", acl.getOrElse(ACL.AUTHENTICATED_READ).toString) <<< file OK { _ =>
         FileItem(path)(new FileInputStream(file))
       }
     }
