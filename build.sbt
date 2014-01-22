@@ -2,7 +2,7 @@ name := "scube"
 
 version := "1.0-SNAPSHOT"
 
-scalaVersion := "2.10.1"
+scalaVersion := "2.10.3"
 
 scalacOptions in ThisBuild ++= Seq(
     "-language:_",

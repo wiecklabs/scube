@@ -113,7 +113,7 @@ class APISpec extends test.Spec {
           val bucket1 = await(S3.put("wieck-test-copy-1")).getOrElse(fail)
           val bucket2 = await(S3.put("wieck-test-copy-2")).getOrElse(fail)
 
-          testCopyFile(bucket1, bucket2)(bucket2.copyFile(bucket1, source, destination))
+          testCopyFile(bucket1, bucket2)(bucket2.copyFile(bucket1, source, destination, None))
         }
 
         "within the same bucket" in await {

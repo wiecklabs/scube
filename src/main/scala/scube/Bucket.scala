@@ -33,7 +33,7 @@ case class Bucket(name: String,
   }
 
   def uri(file: FileItem): URI = {
-    new URI("s3://" + url(file))
+    new URI("https://" + url(file))
   }
 
   def put(path:String):File => Future[FileItem] = put(path, None)
@@ -104,15 +104,19 @@ case class Bucket(name: String,
     }
   }
 
-  def copyFile(sourcePath:String, destinationPath:String):Future[Try[Unit]] =
-    copyFile(this, sourcePath, destinationPath)
+  def copyFile(sourcePath: String, destinationPath: String): Future[Try[Unit]] =
+    copyFile(this, sourcePath, destinationPath, None)
 
-  def copyFile(sourceBucket:Bucket, sourcePath:String, destinationPath:String):Future[Try[Unit]] = {
+  def copyFile(sourcePath: String, destinationPath: String, acl: ACL.ACL): Future[Try[Unit]] =
+    copyFile(this, sourcePath, destinationPath, Some(acl))
+
+  def copyFile(sourceBucket: Bucket, sourcePath:String, destinationPath:String, acl: Option[ACL.ACL]):Future[Try[Unit]] = {
 
     val source = (sourceBucket.name ensureStartsWith '/') + (sourcePath ensureStartsWith '/')
     val destination = destinationPath ensureStartsWith '/'
 
     Http(S3RequestBuilder(this, destination)
+      .setHeader("x-amz-acl", acl.getOrElse(ACL.AUTHENTICATED_READ).toString)
       .setHeader("x-amz-copy-source", source)
       .PUT OK(response => response)).either map {
       case Left(e) => {
