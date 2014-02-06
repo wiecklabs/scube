@@ -1,7 +1,7 @@
 package scube
 
 import scala.concurrent.Future
-import java.io.{FileInputStream, File}
+import java.io.{ByteArrayInputStream, FileInputStream, File}
 import dispatch._, Defaults._
 import scala.util.{Try, Success, Failure}
 import com.typesafe.scalalogging.slf4j.Logging
@@ -36,16 +36,27 @@ case class Bucket(name: String,
     new URI("https://" + url(file))
   }
 
-  def put(path:String):File => Future[FileItem] = put(path, None)
+  def put(path:String)(file: File): Future[FileItem] = put(path, None, file)
 
-  def put(path:String, acl:ACL.ACL):File => Future[FileItem] = put(path, Some(acl))
+  def put(path:String, acl:ACL.ACL)(file: File): Future[FileItem] = put(path, Some(acl), file)
 
-  def put(path:String, acl:Option[ACL.ACL])(file:File):Future[FileItem] = Http {
+  def put(path:String, acl:Option[ACL.ACL], file:File):Future[FileItem] = Http {
     S3RequestBuilder(this, path ensureStartsWith '/')
       .setHeader("x-amz-acl", acl.getOrElse(ACL.AUTHENTICATED_READ).toString) <<< file OK { _ =>
         FileItem(path)(new FileInputStream(file))
       }
     }
+
+  def put(path:String)(bytes: Array[Byte]): Future[FileItem] = put(path, None, bytes)
+
+  def put(path:String, acl:ACL.ACL)(bytes: Array[Byte]): Future[FileItem] = put(path, Some(acl), bytes)
+
+  def put(path: String, acl: Option[ACL.ACL], bytes: Array[Byte]): Future[FileItem] = Http {
+    S3RequestBuilder(this, path ensureStartsWith '/')
+      .setHeader("x-amz-acl", acl.getOrElse(ACL.AUTHENTICATED_READ).toString) setBody bytes OK { _ =>
+      FileItem(path)(new ByteArrayInputStream(bytes))
+    }
+  }
 
   def lifecycle:Future[Lifecycle] = {
     val emptyLifecycle = Lifecycle.empty(this)
