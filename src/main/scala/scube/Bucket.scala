@@ -36,20 +36,20 @@ case class Bucket(name: String,
     new URI("https://" + url(file))
   }
 
-  def put(path:String)(file: File): Future[FileItem] = put(path, None, file)
+  def put[T<:File](path: String)(file: T): Future[FileItem] = put(path, None, file)
 
-  def put(path:String, acl:ACL.ACL)(file: File): Future[FileItem] = put(path, Some(acl), file)
+  def put[T<:File](path: String, acl: ACL.ACL)(file: T): Future[FileItem] = put(path, Some(acl), file)
 
-  def put(path:String, acl:Option[ACL.ACL], file:File):Future[FileItem] = Http {
+  def put(path: String, acl: Option[ACL.ACL], file: File):Future[FileItem] = Http {
     S3RequestBuilder(this, path ensureStartsWith '/')
       .setHeader("x-amz-acl", acl.getOrElse(ACL.AUTHENTICATED_READ).toString) <<< file OK { _ =>
         FileItem(path)(new FileInputStream(file))
       }
     }
 
-  def put(path:String)(bytes: Array[Byte]): Future[FileItem] = put(path, None, bytes)
+  def put[T<:Array[Byte]](path: String)(bytes: T): Future[FileItem] = put(path, None, bytes)
 
-  def put(path:String, acl:ACL.ACL)(bytes: Array[Byte]): Future[FileItem] = put(path, Some(acl), bytes)
+  def put[T<:Array[Byte]](path: String, acl: ACL.ACL)(bytes: T): Future[FileItem] = put(path, Some(acl), bytes)
 
   def put(path: String, acl: Option[ACL.ACL], bytes: Array[Byte]): Future[FileItem] = Http {
     S3RequestBuilder(this, path ensureStartsWith '/')
