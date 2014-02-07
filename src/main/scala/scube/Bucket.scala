@@ -1,13 +1,14 @@
 package scube
 
 import scala.concurrent.Future
-import java.io.{ByteArrayInputStream, FileInputStream, File}
+import java.io.{InputStream, ByteArrayInputStream, FileInputStream, File}
 import dispatch._, Defaults._
 import scala.util.{Try, Success, Failure}
 import com.typesafe.scalalogging.slf4j.Logging
 import scala.xml._
 import scube.S3.DeserializationException
 import java.net.URI
+import com.ning.http.client.RequestBuilder
 
 case class Bucket(name: String,
                   acl:Option[ACL.ACL] = None,
@@ -36,27 +37,41 @@ case class Bucket(name: String,
     new URI("https://" + url(file))
   }
 
-  def put[T<:File](path: String)(file: T): Future[FileItem] = put(path, None, file)
+  trait PutApplication {
+    def apply(file: File): Future[FileItem]
 
-  def put[T<:File](path: String, acl: ACL.ACL)(file: T): Future[FileItem] = put(path, Some(acl), file)
+    def apply(bytes: Array[Byte]): Future[FileItem]
+  }
 
-  def put(path: String, acl: Option[ACL.ACL], file: File):Future[FileItem] = Http {
-    S3RequestBuilder(this, path ensureStartsWith '/')
-      .setHeader("x-amz-acl", acl.getOrElse(ACL.AUTHENTICATED_READ).toString) <<< file OK { _ =>
-        FileItem(path)(new FileInputStream(file))
+  def put(path: String): PutApplication = put(path, None)
+
+  def put(path: String, acl: ACL.ACL): PutApplication = put(path, Some(acl))
+
+  def put(path: String, acl: Option[ACL.ACL]): PutApplication = {
+
+    class PutApplication(path: String, acl: Option[ACL.ACL]) extends Bucket.this.PutApplication {
+
+      def build(mapper: RequestBuilder => RequestBuilder)(stream: InputStream) = Http {
+        val builder = S3RequestBuilder(Bucket.this, path ensureStartsWith '/')
+          .setHeader("x-amz-acl", acl.getOrElse(ACL.AUTHENTICATED_READ).toString)
+
+        mapper(builder) OK { _ =>
+          FileItem(path)(stream)
+        }
+      }
+
+      def apply(file: File): Future[FileItem] = {
+        build(_ <<< file)(new FileInputStream(file))
+      }
+
+      def apply(bytes: Array[Byte]): Future[FileItem] = {
+        build(_ setMethod "PUT" setBody bytes)(new ByteArrayInputStream(bytes))
       }
     }
 
-  def put[T<:Array[Byte]](path: String)(bytes: T): Future[FileItem] = put(path, None, bytes)
-
-  def put[T<:Array[Byte]](path: String, acl: ACL.ACL)(bytes: T): Future[FileItem] = put(path, Some(acl), bytes)
-
-  def put(path: String, acl: Option[ACL.ACL], bytes: Array[Byte]): Future[FileItem] = Http {
-    S3RequestBuilder(this, path ensureStartsWith '/')
-      .setHeader("x-amz-acl", acl.getOrElse(ACL.AUTHENTICATED_READ).toString) setBody bytes OK { _ =>
-      FileItem(path)(new ByteArrayInputStream(bytes))
-    }
+    new PutApplication(path, acl)
   }
+
 
   def lifecycle:Future[Lifecycle] = {
     val emptyLifecycle = Lifecycle.empty(this)
